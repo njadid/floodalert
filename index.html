@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+    <link rel="stylesheet" href="dist/leaflet.css"/>
+    <link rel="stylesheet" href="examples.css"/>
+    <script src="dist/jquery-2.1.4.min.js"></script>
+    <script src="dist/edsc-timeline.min.js"></script>
+    <link href="https://fonts.googleapis.com/css?family=Roboto:100,400" rel="stylesheet">
+</head>
+
+<body onload="myfunction()">
+<div id="timeline-empty" class="timeline"></div>
+
+
+<div id="map"></div>
+
+
+<!-- CDN -->
+<script src="dist/d3.v4.min.js"></script>
+<script src="dist/leaflet.js"></script>
+<script src="dist/geotiff.js"></script>
+<script src="dist/chroma.min.js"></script>
+
+<!-- Plugin -->
+<script src="dist/leaflet.canvaslayer.field.js"></script>
+
+<script>
+    let map = L.map('map');
+    var $timelines = $('.timeline');
+    var dt = [];
+    var data1 = {
+        start: Date.UTC(2015, 1),
+        end: Date.UTC(),
+        resolution: 'day',
+        intervals: [
+            [Date.UTC(2015, 4), Date.UTC(2018, 5)]
+        ]
+    };
+
+    //console.log('dddd'+myfunction());
+    /* Dark basemap */
+    //let url = 'https://cartodb-basemaps-{s}.global.ssl.fastly.net/base_dark/{z}/{x}/{y}.png';
+    let url = 'http://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png';
+
+    L.tileLayer(url, {
+        attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/attributions">CARTO</a>',
+        subdomains: 'abcd'
+    }).addTo(map);
+    var layerGeo;
+
+    function myfunction() {
+
+        fn = "data/20180901.tif";
+        console.log(fn, layerGeo);
+        d3.request(fn).responseType('arraybuffer').get(
+            function (error, tiffData) {
+                // Geopotential height (BAND 0)
+                let geo = L.ScalarField.fromGeoTIFF(tiffData.response);
+                layerGeo = L.canvasLayer.scalarField(geo, {
+                    inFilter: (v) => v !== -9999 && v > 0.5 && v < 20,
+                    color: chroma.scale('RdPu').domain([0.5, 5]),
+                    opacity: 1
+                }).addTo(map);
+                layerGeo.on('click', function (e) {
+                    if (e.value !== null) {
+                        let v = e.value.toFixed(0);
+                        let html = (`<span class="popupText">Flood Index ${v}</span>`);
+                        let popup = L.popup()
+                            .setLatLng(e.latlng)
+                            .setContent(html)
+                            .openOn(map);
+                    }
+                });
+                map.fitBounds(layerGeo.getBounds());
+
+                console.log(fn, layerGeo);
+            })
+    }
+
+    function formatDate(date) {
+        var d = new Date(date),
+            month = '' + (d.getMonth() + 1),
+            day = '' + d.getDate(),
+            year = d.getFullYear();
+
+        if (month.length < 2) month = '0' + month;
+        if (day.length < 2) day = '0' + day;
+        let dt = [year, month, day].join('')
+        return dt;
+    }
+
+    $timelines.on('focusset.timeline', function (e, start, end, resolution) {
+        dt = formatDate(start);
+        let fn = "data/" + dt + ".tif";
+        //map.removeLayer(layerGeo)
+        change(fn)
+    });
+
+    /* Temperature and Geopotencial Height in GeoTIFF with 2 bands */
+    function change(fn, LayerGeo) {
+
+        // show icon loading
+        //make the interface freeze disallow clicking
+        // preserve the view point leaflet
+        d3.request(fn).responseType('arraybuffer').get(
+            function (error, tiffData) {
+                // Geopotential height (BAND 0)
+                let geo = L.ScalarField.fromGeoTIFF(tiffData.response);
+                var defaultBounds = map.getBounds();
+                map.removeLayer(layerGeo)
+                layerGeo = L.canvasLayer.scalarField(geo, {
+                    inFilter: (v) => v !== -9999 && v > 0.5 && v < 20,
+                    color: chroma.scale('RdPu').domain([0.5, 5]),
+                    opacity: 1,
+                    maxBounds: defaultBounds,
+                    zoom: defaultBounds
+                }).addTo(map);
+                console.log(layerGeo);
+                layerGeo.on('click', function (e) {
+                    if (e.value !== null) {
+                        let v = e.value.toFixed(0);
+                        let html = (`<span class="popupText">Flood Index ${v}</span>`);
+                        let popup = L.popup()
+                            .setLatLng(e.latlng)
+                            .setContent(html)
+                            .openOn(map);
+                    }
+                });
+                map.fitBounds(defaultBounds);
+
+            })
+    }
+
+    $timelines.on('rangechange.timeline', function (e, start, end) {
+        console.log('range change', start, end);
+        //
+    });
+
+    $timelines.on('temporalset.timeline', function (e, start, end) {
+        console.log('temporal set', start, end);
+    });
+    $timelines.on('temporalremove.timeline', function (e) {
+        console.log('temporal cleared');
+    });
+    $timelines.on('temporalset.timeline', function (e, start, end) {
+
+    });
+
+    $timelines.on('focusset.timeline', function (e, start, end, resolution) {
+        fn = 'data/123.tif'
+        d3.select('#content').selectAll().remove()
+        //d3.selectAll('timeLines').on('focusset', change(fn));
+    });
+
+    $timelines.on('focusremove.timeline', function (e) {
+        console.log('focus cleared');
+    });
+
+    $timelines
+        .timeline()
+        .timeline('show');
+
+
+</script>
+
+</body>
+
+</html>
