@@ -42,14 +42,7 @@
     let map = L.map('map');
     var $timelines = $('.timeline');
     var dt = [];
-    var data1 = {
-        start: Date.UTC(2018, 1),
-        end: Date.UTC(2018, 12),
-        resolution: 'day',
-        intervals: [
-            [Date.UTC(2015, 4), Date.UTC(2018, 5)]
-        ]
-    };
+
 
     //console.log('dddd'+myfunction());
     /* Dark basemap */
@@ -203,6 +196,14 @@
     $timelines
         .timeline()
         .timeline('show');
+    const data1 = {
+        start: Date.UTC(2018, 1),
+        end: Date.UTC(2018, 12),
+        resolution: 'day',
+        intervals: [
+            [Date.UTC(2015, 4), Date.UTC(2018, 12)]
+        ]
+    };
     const row1 = {
         id: "examplerow1",
         title: "Deficit-Based Rainfall",
